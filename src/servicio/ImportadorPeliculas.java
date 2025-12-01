@@ -2,6 +2,8 @@ package servicio;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -36,7 +38,7 @@ public class ImportadorPeliculas {
 
         try {
             Map<String, Integer> indices = new HashMap<>();
-            try (BufferedReader reader = Files.newBufferedReader(csvPath, StandardCharsets.UTF_8)) {
+            try (BufferedReader reader = abrirLectorCsv(csvPath)) {
                 String header = reader.readLine();
                 if (header == null) {
                     throw new CargaArchivoException("El archivo CSV está vacío");
@@ -92,6 +94,20 @@ public class ImportadorPeliculas {
     public synchronized List<Pelicula> obtenerTopDiez(Path csvPath) throws CargaArchivoException {
         List<Pelicula> peliculas = cargarPeliculas(csvPath);
         return peliculas.subList(0, Math.min(10, peliculas.size()));
+    }
+
+    private BufferedReader abrirLectorCsv(Path csvPath) throws IOException {
+        if (Files.exists(csvPath)) {
+            return Files.newBufferedReader(csvPath, StandardCharsets.UTF_8);
+        }
+
+        InputStream recurso = getClass().getClassLoader()
+                .getResourceAsStream(csvPath.getFileName().toString());
+        if (recurso != null) {
+            return new BufferedReader(new InputStreamReader(recurso, StandardCharsets.UTF_8));
+        }
+
+        throw new IOException("No se encontró el archivo CSV: " + csvPath.toAbsolutePath());
     }
 
     public synchronized List<Pelicula> obtenerDiezAleatoriasNoCalificadas(Path csvPath, List<Integer> idsYaCalificados)
