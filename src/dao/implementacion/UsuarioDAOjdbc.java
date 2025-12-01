@@ -13,17 +13,17 @@ import modelo.DatosPersonales;
 import modelo.Usuario;
 
 public class UsuarioDAOjdbc implements UsuarioDAO{
-	
-	public void insertar(String nombreUsuario, String email, String contrasenia, int idDP) {
+
+        public void insertar(String nombreUsuario, String email, String contrasenia, int idDP) {
         String sql = "INSERT INTO USUARIO (NOMBRE_USUARIO, EMAIL, CONTRASENIA, ID_DATOS_PERSONALES) VALUES (?, ?, ?, ?)";
         try {
-        	PreparedStatement ps = ConexionBD.getInstancia().getConexion().prepareStatement(sql);
-        	
-        	ps.setString(1, nombreUsuario);
-        	ps.setString(2, email);
-        	ps.setString(3, contrasenia);
-        	ps.setInt(4, idDP);
-        	ps.executeUpdate();
+                PreparedStatement ps = ConexionBD.getInstancia().getConexion().prepareStatement(sql);
+
+                ps.setString(1, nombreUsuario);
+                ps.setString(2, email);
+                ps.setString(3, contrasenia);
+                ps.setInt(4, idDP);
+                ps.executeUpdate();
             System.out.println("✅ Usuario guardado correctamente.");
 
         } catch (SQLException e) {
@@ -40,24 +40,24 @@ public class UsuarioDAOjdbc implements UsuarioDAO{
             JOIN DATOS_PERSONALES D ON U.ID_DATOS_PERSONALES = D.ID
             """;
         try {
-        	Statement sent = ConexionBD.getInstancia().getConexion().createStatement();
-        	ResultSet resul = sent.executeQuery(sql);
+                Statement sent = ConexionBD.getInstancia().getConexion().createStatement();
+                ResultSet resul = sent.executeQuery(sql);
 
             while (resul.next()) {
                 DatosPersonales dp = new DatosPersonales(
-                		resul.getInt("DP_ID"),
-                		resul.getString("NOMBRES"),
-                		resul.getString("APELLIDO"),
-                		resul.getLong("DNI")
+                                resul.getInt("DP_ID"),
+                                resul.getString("NOMBRES"),
+                                resul.getString("APELLIDO"),
+                                resul.getLong("DNI")
                 );
 
                 Usuario u = new Usuario(
-                		resul.getInt("DP_ID"),
-                		dp,
-                		resul.getString("NOMBRE_USUARIO"),
-                		resul.getString("EMAIL"),
-                		resul.getString("CONTRASENIA")
-                		
+                                resul.getInt("DP_ID"),
+                                dp,
+                                resul.getString("NOMBRE_USUARIO"),
+                                resul.getString("EMAIL"),
+                                resul.getString("CONTRASENIA")
+
                 );
 
                 lista.add(u);
@@ -79,8 +79,8 @@ public class UsuarioDAOjdbc implements UsuarioDAO{
             WHERE U.EMAIL = ? AND U.CONTRASENIA = ?
         """;
         try {
-        	PreparedStatement ps = ConexionBD.getInstancia().getConexion().prepareStatement(sql);
-        	
+                PreparedStatement ps = ConexionBD.getInstancia().getConexion().prepareStatement(sql);
+
             ps.setString(1, email);
             ps.setString(2, contrasenia);
             ResultSet rs = ps.executeQuery();
@@ -101,6 +101,36 @@ public class UsuarioDAOjdbc implements UsuarioDAO{
             }
         } catch (SQLException e) {
             System.out.println("❌ Error al buscar usuario: " + e.getMessage());
+        }
+        return null;
+    }
+
+    public Usuario buscarPorEmail(String email) {
+        String sql = "SELECT * FROM USUARIO WHERE EMAIL = ?";
+        try {
+            PreparedStatement ps = ConexionBD.getInstancia().getConexion().prepareStatement(sql);
+            ps.setString(1, email);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return new Usuario(rs.getInt("ID"), null, rs.getString("NOMBRE_USUARIO"), rs.getString("EMAIL"), rs.getString("CONTRASENIA"));
+            }
+        } catch (SQLException e) {
+            System.out.println("❌ Error al buscar email: " + e.getMessage());
+        }
+        return null;
+    }
+
+    public Usuario buscarPorNombreUsuario(String nombreUsuario) {
+        String sql = "SELECT * FROM USUARIO WHERE NOMBRE_USUARIO = ?";
+        try {
+            PreparedStatement ps = ConexionBD.getInstancia().getConexion().prepareStatement(sql);
+            ps.setString(1, nombreUsuario);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return new Usuario(rs.getInt("ID"), null, rs.getString("NOMBRE_USUARIO"), rs.getString("EMAIL"), rs.getString("CONTRASENIA"));
+            }
+        } catch (SQLException e) {
+            System.out.println("❌ Error al buscar nombre de usuario: " + e.getMessage());
         }
         return null;
     }

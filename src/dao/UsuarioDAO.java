@@ -5,10 +5,13 @@ import modelo.Usuario;
 
 public interface UsuarioDAO {
 
-    public void insertar(String nombreUsuario, String email, String contrasenia, int idDP);
+    void insertar(String nombreUsuario, String email, String contrasenia, int idDP);
 
-    public List<Usuario> listarTodos();
+    List<Usuario> listarTodos();
 
-    public Usuario buscarPorCredenciales(String usuario, String contrasenia);
-    
+    Usuario buscarPorCredenciales(String usuario, String contrasenia);
+
+    Usuario buscarPorEmail(String email);
+
+    Usuario buscarPorNombreUsuario(String nombreUsuario);
 }

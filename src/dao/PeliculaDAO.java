@@ -1,12 +1,17 @@
 package dao;
 
 import java.util.List;
-import modelo.Audiovisual;
+
+import modelo.Pelicula;
 
 public interface PeliculaDAO {
 
-    public void insertar(String titulo, String director, String resumen, double duracion, String genero);
+    void insertar(String titulo, String director, String resumen, double duracion, String genero);
 
-    public List<Audiovisual> listarTodas();
-    
+    void insertar(String titulo, String director, String resumen, double duracion, String genero,
+                  double ratingPromedio, int anio, String poster);
+
+    Pelicula buscarPorTitulo(String titulo);
+
+    List<Pelicula> listarTodas();
 }

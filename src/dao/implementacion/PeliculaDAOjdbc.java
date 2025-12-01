@@ -10,20 +10,27 @@ import java.util.List;
 import conexion.ConexionBD;
 import dao.PeliculaDAO;
 import enumerativo.Genero;
-import enumerativo.TipoContenido;
-import modelo.Audiovisual;
+import modelo.Pelicula;
 
 public class PeliculaDAOjdbc implements PeliculaDAO{
-	public void insertar(String titulo, String director, String resumen, double duracion, String genero) {
-        String sql = "INSERT INTO PELICULA (GENERO, TITULO, RESUMEN, DIRECTOR, DURACION) VALUES (?, ?, ?, ?, ?)";
+        public void insertar(String titulo, String director, String resumen, double duracion, String genero) {
+        insertar(titulo, director, resumen, duracion, genero, 0.0, 0, "");
+    }
+
+    public void insertar(String titulo, String director, String resumen, double duracion, String genero,
+                          double ratingPromedio, int anio, String poster) {
+        String sql = "INSERT INTO PELICULA (GENERO, TITULO, RESUMEN, DIRECTOR, DURACION, RATING_PROMEDIO, ANIO, POSTER) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         try {
-        	PreparedStatement ps = ConexionBD.getInstancia().getConexion().prepareStatement(sql);
+                PreparedStatement ps = ConexionBD.getInstancia().getConexion().prepareStatement(sql);
 
             ps.setString(1, genero);
             ps.setString(2, titulo);
             ps.setString(3, resumen);
             ps.setString(4, director);
             ps.setDouble(5, duracion);
+            ps.setDouble(6, ratingPromedio);
+            ps.setInt(7, anio);
+            ps.setString(8, poster);
             ps.executeUpdate();
             System.out.println("✅ Película guardada correctamente.");
 
@@ -32,23 +39,51 @@ public class PeliculaDAOjdbc implements PeliculaDAO{
         }
     }
 
-    public List<Audiovisual> listarTodas() {
-        List<Audiovisual> lista = new ArrayList<Audiovisual>();
-        String sql = "SELECT * FROM PELICULA";
+    public Pelicula buscarPorTitulo(String titulo) {
+        String sql = "SELECT * FROM PELICULA WHERE TITULO = ?";
         try {
-        	Statement st = ConexionBD.getInstancia().getConexion().createStatement();
-            ResultSet rs = st.executeQuery(sql);
-        	
-            while (rs.next()) {
-            	Genero genero = Genero.valueOf(rs.getString("GENERO").toUpperCase());
-            	Audiovisual p = new Audiovisual(
+            PreparedStatement ps = ConexionBD.getInstancia().getConexion().prepareStatement(sql);
+            ps.setString(1, titulo);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                Genero genero = Genero.valueOf(rs.getString("GENERO").toUpperCase());
+                return new Pelicula(
                         rs.getInt("ID"),
                         rs.getString("TITULO"),
                         rs.getString("RESUMEN"),
                         rs.getString("DIRECTOR"),
                         genero,
                         rs.getDouble("DURACION"),
-                        TipoContenido.PELICULA
+                        rs.getDouble("RATING_PROMEDIO"),
+                        rs.getInt("ANIO"),
+                        rs.getString("POSTER")
+                );
+            }
+        } catch (SQLException e) {
+            System.out.println("❌ Error al buscar película: " + e.getMessage());
+        }
+        return null;
+    }
+
+    public List<Pelicula> listarTodas() {
+        List<Pelicula> lista = new ArrayList<Pelicula>();
+        String sql = "SELECT * FROM PELICULA";
+        try {
+                Statement st = ConexionBD.getInstancia().getConexion().createStatement();
+            ResultSet rs = st.executeQuery(sql);
+
+            while (rs.next()) {
+                Genero genero = Genero.valueOf(rs.getString("GENERO").toUpperCase());
+                Pelicula p = new Pelicula(
+                        rs.getInt("ID"),
+                        rs.getString("TITULO"),
+                        rs.getString("RESUMEN"),
+                        rs.getString("DIRECTOR"),
+                        genero,
+                        rs.getDouble("DURACION"),
+                        rs.getDouble("RATING_PROMEDIO"),
+                        rs.getInt("ANIO"),
+                        rs.getString("POSTER")
                 );
                 lista.add(p);
             }

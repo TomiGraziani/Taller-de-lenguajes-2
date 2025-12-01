@@ -154,7 +154,7 @@ public class FormularioRegistro extends JPanel {
             String contrasenia = new String(campoContrasenia.getPassword());
     		
             // Validar que no haya campos vacios
-    		if (nombre.isEmpty() || apellido.isEmpty() || dni.isEmpty() || nombreUsuario.isEmpty() || email.isEmpty() || contrasenia.isEmpty()) {
+            if (nombre.isEmpty() || apellido.isEmpty() || dni.isEmpty() || nombreUsuario.isEmpty() || email.isEmpty() || contrasenia.isEmpty()) {
                 JOptionPane.showMessageDialog(this, "Todos los campos son obligatorios");
                 return;
             }
@@ -169,10 +169,31 @@ public class FormularioRegistro extends JPanel {
                 return;
             }
 
+            long dniNumero;
+            try {
+                dniNumero = Long.parseLong(dni);
+            } catch (NumberFormatException ex) {
+                JOptionPane.showMessageDialog(this, "DNI inválido");
+                return;
+            }
+
+            if (datosPersonalesDAO.buscarPorDNI(dniNumero) != null) {
+                JOptionPane.showMessageDialog(this, "El DNI ya se encuentra registrado");
+                return;
+            }
+            if (usuarioDAO.buscarPorEmail(email) != null) {
+                JOptionPane.showMessageDialog(this, "El email ya se encuentra registrado");
+                return;
+            }
+            if (usuarioDAO.buscarPorNombreUsuario(nombreUsuario) != null) {
+                JOptionPane.showMessageDialog(this, "El nombre de usuario ya existe");
+                return;
+            }
+
             // Guardar en BD
-            datosPersonalesDAO.insertar(nombre, apellido, Long.parseLong(dni));
-            DatosPersonales nuevo = datosPersonalesDAO.buscarPorDNI(Long.parseLong(dni));
-            usuarioDAO.insertar(nombre, email, contrasenia, nuevo.getId());
+            datosPersonalesDAO.insertar(nombre, apellido, dniNumero);
+            DatosPersonales nuevo = datosPersonalesDAO.buscarPorDNI(dniNumero);
+            usuarioDAO.insertar(nombreUsuario, email, contrasenia, nuevo.getId());
 
             JOptionPane.showMessageDialog(this, "Usuario registrado correctamente");
 

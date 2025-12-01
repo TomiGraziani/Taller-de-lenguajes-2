@@ -6,7 +6,7 @@ import java.sql.Statement;
 
 public class TablasBD {
 
-	public void crearTablas(Connection cx) {
+        public void crearTablas(Connection cx) {
         try (Statement stmt = cx.createStatement()) {
 
             String sqlDatosPersonales = """
@@ -32,11 +32,14 @@ public class TablasBD {
             String sqlPelicula = """
                 CREATE TABLE IF NOT EXISTS PELICULA (
                     ID INTEGER PRIMARY KEY AUTOINCREMENT,
-                    GENERO TEXT(1) NOT NULL,
+                    GENERO TEXT(20) NOT NULL,
                     TITULO TEXT(100) NOT NULL,
                     RESUMEN TEXT(500),
                     DIRECTOR TEXT(100) NOT NULL,
-                    DURACION REAL NOT NULL
+                    DURACION REAL NOT NULL,
+                    RATING_PROMEDIO REAL DEFAULT (0),
+                    ANIO INTEGER DEFAULT (0),
+                    POSTER TEXT
                 );
             """;
 
@@ -59,11 +62,16 @@ public class TablasBD {
             stmt.execute(sqlPelicula);
             stmt.execute(sqlResenia);
 
+            // Asegurar columnas nuevas en caso de bases existentes
+            try { stmt.execute("ALTER TABLE PELICULA ADD COLUMN RATING_PROMEDIO REAL DEFAULT (0)"); } catch (SQLException ignored) {}
+            try { stmt.execute("ALTER TABLE PELICULA ADD COLUMN ANIO INTEGER DEFAULT (0)"); } catch (SQLException ignored) {}
+            try { stmt.execute("ALTER TABLE PELICULA ADD COLUMN POSTER TEXT"); } catch (SQLException ignored) {}
+
             System.out.println("✅ Tablas creadas correctamente.");
 
         } catch (SQLException e) {
             System.out.println("❌ Error creando tablas: " + e.getMessage());
         }
     }
-	
+
 }

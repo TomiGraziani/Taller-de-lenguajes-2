@@ -182,7 +182,7 @@ public class PlataformaService {
     // --- OPCIÓN 5: LISTAR PELÍCULAS ---
     public void listarPeliculas(PeliculaDAOjdbc peliculaDAO) {
         System.out.println("\n=== Listado de Películas ===");
-        List<Audiovisual> pelis = peliculaDAO.listarTodas();
+        List<Pelicula> pelis = peliculaDAO.listarTodas();
         if (pelis.isEmpty()) {
             System.out.println("⚠️ No hay películas registradas.");
             return;
@@ -221,7 +221,7 @@ public class PlataformaService {
             return;
         }
 
-        List<Audiovisual> pelis = peliculaDAO.listarTodas();
+        List<Pelicula> pelis = peliculaDAO.listarTodas();
         if (pelis.isEmpty()) {
             System.out.println("⚠️ No hay películas registradas.");
             return;
