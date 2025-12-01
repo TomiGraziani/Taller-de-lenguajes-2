@@ -62,13 +62,14 @@ public class FormularioLogin extends JPanel {
             }
             
             Usuario usuario = usuarioDAO.buscarPorCredenciales(email, contrasenia);
-            if(usuario != null) {
-            	JOptionPane.showMessageDialog(this, "Credenciales inválidas.");
+            if(usuario == null) {
+                JOptionPane.showMessageDialog(this, "Credenciales inválidas.");
                 return;
             }
 
-            JOptionPane.showMessageDialog(this, "Intentando ingresar...");
+            JOptionPane.showMessageDialog(this, "¡Bienvenido "+ usuario.getNombreUsuario() +"!");
             limpiarCampos();
+            mainWindow.abrirPlataforma(usuario);
         });
 
     }
