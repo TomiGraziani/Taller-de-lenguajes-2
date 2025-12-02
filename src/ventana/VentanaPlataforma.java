@@ -18,6 +18,7 @@ import java.awt.image.BufferedImage;
 import java.net.URL;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -57,6 +58,7 @@ import modelo.Usuario;
 import servicio.ConsultaOMDbService;
 import servicio.ImportadorPeliculas;
 import servicio.ConsultaOMDbService.ResultadoOMDb;
+import enumerativo.Genero;
 
 public class VentanaPlataforma extends JFrame {
 
@@ -206,6 +208,7 @@ public class VentanaPlataforma extends JFrame {
             public Class<?> getColumnClass(int columnIndex) {
                 return switch (columnIndex) {
                     case 0 -> ImageIcon.class;
+                    case 2 -> Genero.class;
                     case 4 -> JButton.class;
                     default -> String.class;
                 };
@@ -272,6 +275,7 @@ public class VentanaPlataforma extends JFrame {
         sorter.setSortable(0, false);
         sorter.setSortable(3, false);
         sorter.setSortable(4, false);
+        sorter.setComparator(2, Comparator.comparing(Genero::name, String.CASE_INSENSITIVE_ORDER));
         tablaPeliculas.setRowSorter(sorter);
     }
 
