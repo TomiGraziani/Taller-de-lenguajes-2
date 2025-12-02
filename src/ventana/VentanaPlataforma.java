@@ -5,17 +5,24 @@ import java.awt.CardLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.Font;
 import java.awt.Graphics2D;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.Image;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.net.URL;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.imageio.ImageIO;
@@ -30,11 +37,9 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
-import javax.swing.JSpinner;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
-import javax.swing.SpinnerNumberModel;
 import javax.swing.SwingUtilities;
 import javax.swing.SwingWorker;
 import javax.swing.table.DefaultTableCellRenderer;
@@ -69,8 +74,9 @@ public class VentanaPlataforma extends JFrame {
     private JPanel contenedorCentro;
     private JLabel estadoLabel;
     private JTextField campoBusqueda;
-    private JTextArea areaResultadoBusqueda;
     private ImageIcon posterPlaceholder;
+    private final Set<Integer> peliculasCalificadas = new HashSet<>();
+    private final Map<String, Pelicula> peliculasPorTitulo = new HashMap<>();
 
     public VentanaPlataforma(Usuario usuario, PeliculaDAOjdbc peliculaDAO, ReseniaDAOjdbc reseniaDAO) {
         this.usuario = usuario;
@@ -129,10 +135,6 @@ public class VentanaPlataforma extends JFrame {
         c.fill = GridBagConstraints.HORIZONTAL;
 
         JLabel lblBuscar = new JLabel("Buscar película (OMDb):");
-        areaResultadoBusqueda = new JTextArea(4, 28);
-        areaResultadoBusqueda.setEditable(false);
-        areaResultadoBusqueda.setLineWrap(true);
-        areaResultadoBusqueda.setWrapStyleWord(true);
 
         JButton btnBuscar = new JButton("Buscar");
         btnBuscar.addActionListener(e -> buscarOmdb());
@@ -144,8 +146,6 @@ public class VentanaPlataforma extends JFrame {
         panel.add(campoBusqueda, c);
         c.gridx = 1; c.weightx = 0;
         panel.add(btnBuscar, c);
-        c.gridx = 0; c.gridy = 2; c.gridwidth = 2; c.weightx = 1.0; c.fill = GridBagConstraints.BOTH;
-        panel.add(new JScrollPane(areaResultadoBusqueda), c);
 
         return panel;
     }
@@ -193,7 +193,14 @@ public class VentanaPlataforma extends JFrame {
         modeloTabla = new DefaultTableModel(new Object[]{"Poster", "Título", "Género", "Resumen", "Acción"}, 0) {
             private static final long serialVersionUID = 1L;
             @Override
-            public boolean isCellEditable(int row, int column) { return column == 4; }
+            public boolean isCellEditable(int row, int column) {
+                if (column != 4) return false;
+                Object value = getValueAt(row, column);
+                if (value instanceof AccionCalificar accion) {
+                    return accion.habilitado();
+                }
+                return true;
+            }
             @Override
             public Class<?> getColumnClass(int columnIndex) {
                 return switch (columnIndex) {
@@ -261,9 +268,10 @@ public class VentanaPlataforma extends JFrame {
     private void cargarPeliculas() {
         layoutCentro.show(contenedorCentro, "LOADING");
         SwingWorker<List<Pelicula>, Void> worker = new SwingWorker<>() {
+            private List<Integer> calificadas;
             @Override
             protected List<Pelicula> doInBackground() throws Exception {
-                List<Integer> calificadas = reseniaDAO.listarPorUsuario(usuario.getId()).stream()
+                calificadas = reseniaDAO.listarPorUsuario(usuario.getId()).stream()
                         .map(r -> r.getIdPelicula()).collect(Collectors.toList());
                 if (calificadas.isEmpty()) {
                     return importador.obtenerTopDiez(csvPath);
@@ -272,10 +280,14 @@ public class VentanaPlataforma extends JFrame {
             }
 
             @Override
-           
+
             protected void done() {
                 try {
                     List<Pelicula> pelis = get();
+                    peliculasCalificadas.clear();
+                    if (calificadas != null) {
+                        peliculasCalificadas.addAll(calificadas);
+                    }
                     poblarTabla(pelis);
                     layoutCentro.show(contenedorCentro, "TABLA");
                 } catch (Exception e) {
@@ -290,17 +302,20 @@ public class VentanaPlataforma extends JFrame {
 
     private void poblarTabla(List<Pelicula> peliculas) {
         modeloTabla.setRowCount(0);
+        peliculasPorTitulo.clear();
         if (posterPlaceholder == null) {
             posterPlaceholder = crearPlaceholder();
         }
         try {
             for (Pelicula p : peliculas) {
+                peliculasPorTitulo.put(p.getTitulo(), p);
+                boolean yaCalificada = peliculasCalificadas.contains(p.getId());
                 modeloTabla.addRow(new Object[]{
                     cargarPoster(p.getPoster()),
                     p.getTitulo(),
                     p.getGenero(),
                     resumir(p.getSinopsis()),
-                    "Calificar"
+                    new AccionCalificar(yaCalificada ? "Calificada" : "Calificar", !yaCalificada)
                 });
             }
         } catch (Exception e) {
@@ -320,62 +335,112 @@ public class VentanaPlataforma extends JFrame {
 
     private void calificarFila(int fila) {
         String titulo = (String) modeloTabla.getValueAt(fila, 1);
-        Pelicula pelicula = peliculaDAO.buscarPorTitulo(titulo);
+        Pelicula pelicula = peliculasPorTitulo.getOrDefault(titulo, peliculaDAO.buscarPorTitulo(titulo));
         if (pelicula == null) {
             JOptionPane.showMessageDialog(this, "No se encontró la película seleccionada");
             return;
         }
 
-        if (reseniaDAO.existeResenia(usuario.getId(), pelicula.getId())) {
+        if (peliculasCalificadas.contains(pelicula.getId()) || reseniaDAO.existeResenia(usuario.getId(), pelicula.getId())) {
             JOptionPane.showMessageDialog(this, "Ya calificó esta película");
             return;
         }
 
-        mostrarDialogoCalificacion(pelicula);
+        mostrarDialogoCalificacion(pelicula, fila);
     }
 
-    private void mostrarDialogoCalificacion(Pelicula pelicula) {
+    private void mostrarDialogoCalificacion(Pelicula pelicula, int filaTabla) {
         JDialog dialogo = new JDialog(this, "Calificar " + pelicula.getTitulo(), true);
-        dialogo.setSize(new Dimension(400, 300));
+        dialogo.setSize(new Dimension(500, 380));
         dialogo.setLocationRelativeTo(this);
         dialogo.setLayout(new BorderLayout());
+
+        JLabel titulo = new JLabel(pelicula.getTitulo());
+        titulo.setFont(new Font("Roboto", Font.BOLD, 18));
+        titulo.setBorder(BorderFactory.createEmptyBorder(12, 12, 4, 12));
+        dialogo.add(titulo, BorderLayout.NORTH);
+
+        JButton btnGuardar = new JButton("Guardar");
+        btnGuardar.putClientProperty("calificacion", 0);
 
         JPanel centro = new JPanel(new GridBagLayout());
         GridBagConstraints c = new GridBagConstraints();
         c.insets = new Insets(8, 8, 8, 8);
-        c.gridx = 0; c.gridy = 0;
-        centro.add(new JLabel("Puntaje (1-10):"), c);
+        c.gridx = 0; c.gridy = 0; c.anchor = GridBagConstraints.WEST;
+        centro.add(new JLabel("Calificación:"), c);
         c.gridx = 1;
-        JSpinner spinner = new JSpinner(new SpinnerNumberModel(5, 1, 10, 1));
-        centro.add(spinner, c);
+        JPanel panelEstrellas = crearSelectorEstrellas(btnGuardar);
+        centro.add(panelEstrellas, c);
 
-        c.gridx = 0; c.gridy = 1; c.gridwidth = 2;
+        c.gridx = 0; c.gridy = 1; c.gridwidth = 2; c.anchor = GridBagConstraints.WEST;
         centro.add(new JLabel("Comentario:"), c);
         c.gridy = 2;
-        JTextArea area = new JTextArea(5, 25);
+        JTextArea area = new JTextArea(6, 32);
+        area.setLineWrap(true);
+        area.setWrapStyleWord(true);
         centro.add(new JScrollPane(area), c);
 
         dialogo.add(centro, BorderLayout.CENTER);
 
-        JButton btnGuardar = new JButton("Guardar");
         btnGuardar.addActionListener(ev -> {
             try {
                 String comentario = area.getText().trim();
-                int calificacion = (int) spinner.getValue();
+                int calificacion = (int) btnGuardar.getClientProperty("calificacion");
                 if (comentario.isEmpty()) {
                     throw new DatosIncompletosException("Debe ingresar un comentario");
                 }
+                if (calificacion == 0) {
+                    throw new DatosIncompletosException("Seleccione una calificación");
+                }
                 String fecha = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
                 reseniaDAO.insertar(calificacion, comentario, 0, fecha, usuario.getId(), pelicula.getId());
+                peliculasCalificadas.add(pelicula.getId());
+                modeloTabla.setValueAt(new AccionCalificar("Calificada", false), filaTabla, 4);
                 JOptionPane.showMessageDialog(dialogo, "Calificación guardada");
                 dialogo.dispose();
             } catch (DatosIncompletosException ex) {
                 JOptionPane.showMessageDialog(dialogo, ex.getMessage());
             }
         });
-        dialogo.add(btnGuardar, BorderLayout.SOUTH);
+
+        JPanel pie = new JPanel();
+        pie.add(btnGuardar);
+        dialogo.add(pie, BorderLayout.SOUTH);
 
         dialogo.setVisible(true);
+    }
+
+    private JPanel crearSelectorEstrellas(JButton btnGuardar) {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        JLabel[] estrellas = new JLabel[5];
+
+        for (int i = 0; i < estrellas.length; i++) {
+            JLabel lbl = new JLabel("☆");
+            lbl.setFont(new Font("SansSerif", Font.PLAIN, 28));
+            lbl.setForeground(new Color(0, 139, 139));
+            int valor = i + 1;
+            lbl.setCursor(new java.awt.Cursor(java.awt.Cursor.HAND_CURSOR));
+            lbl.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    btnGuardar.putClientProperty("calificacion", valor);
+                    actualizarEstrellas(estrellas, valor);
+                }
+            });
+            estrellas[i] = lbl;
+            panel.add(lbl);
+        }
+
+        actualizarEstrellas(estrellas, 0);
+        return panel;
+    }
+
+    private void actualizarEstrellas(JLabel[] estrellas, int seleccion) {
+        for (int i = 0; i < estrellas.length; i++) {
+            boolean activa = i < seleccion;
+            estrellas[i].setText(activa ? "★" : "☆");
+            estrellas[i].setForeground(activa ? new Color(255, 193, 7) : new Color(0, 139, 139));
+        }
     }
 
     private void buscarOmdb() {
@@ -400,16 +465,58 @@ public class VentanaPlataforma extends JFrame {
 
             @Override
             protected void done() {
-                if (error != null) {
-                    areaResultadoBusqueda.setText(error.getMessage());
-                } else if (resultado != null) {
-                    areaResultadoBusqueda.setText("Título: " + resultado.titulo() + "\n" +
-                            "Año: " + resultado.anio() + "\n" +
-                            "Sinopsis: " + resultado.sinopsis());
-                }
+                mostrarVentanaResultado(titulo, resultado, error);
             }
         };
         worker.execute();
+    }
+
+    private void mostrarVentanaResultado(String tituloBuscado, ResultadoOMDb resultado, Exception error) {
+        boolean encontrado = error == null && resultado != null;
+        String titulo = encontrado ? resultado.titulo() : tituloBuscado;
+        String anio = encontrado ? resultado.anio() : "no se encuentra disponible";
+        String resumen = encontrado ? resultado.sinopsis() : "no se encuentra disponible";
+
+        JDialog dialogo = new JDialog(this, "Plataforma de Streaming - Información", true);
+        dialogo.setSize(new Dimension(460, 320));
+        dialogo.setLocationRelativeTo(this);
+        dialogo.setLayout(new BorderLayout());
+
+        JPanel contenido = new JPanel(new GridBagLayout());
+        GridBagConstraints c = new GridBagConstraints();
+        c.insets = new Insets(6, 10, 6, 10);
+        c.gridx = 0; c.gridy = 0; c.anchor = GridBagConstraints.WEST;
+        JLabel lblTitulo = new JLabel("Título de la Película");
+        lblTitulo.setFont(new Font("Roboto", Font.BOLD, 16));
+        contenido.add(lblTitulo, c);
+
+        c.gridy = 1;
+        JLabel lblNombre = new JLabel(titulo);
+        lblNombre.setFont(new Font("Roboto", Font.PLAIN, 14));
+        contenido.add(lblNombre, c);
+
+        c.gridy = 2;
+        contenido.add(new JLabel("Año: " + anio), c);
+
+        c.gridy = 3;
+        contenido.add(new JLabel("Resumen:"), c);
+        c.gridy = 4;
+        JTextArea area = new JTextArea(5, 28);
+        area.setLineWrap(true);
+        area.setWrapStyleWord(true);
+        area.setEditable(false);
+        area.setText(resumen);
+        contenido.add(new JScrollPane(area), c);
+
+        dialogo.add(contenido, BorderLayout.CENTER);
+
+        JButton btnContinuar = new JButton("Continuar");
+        btnContinuar.addActionListener(e -> dialogo.dispose());
+        JPanel pie = new JPanel();
+        pie.add(btnContinuar);
+        dialogo.add(pie, BorderLayout.SOUTH);
+
+        dialogo.setVisible(true);
     }
 
     private ImageIcon cargarPoster(String urlPoster) {
@@ -453,6 +560,8 @@ public class VentanaPlataforma extends JFrame {
         }
         return texto.substring(0, limite) + "...";
     }
+
+    private record AccionCalificar(String texto, boolean habilitado) {}
 
     private class PosterRenderer extends DefaultTableCellRenderer {
         private static final long serialVersionUID = 1L;
@@ -505,9 +614,18 @@ public class VentanaPlataforma extends JFrame {
 
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-            setText(value == null ? "" : value.toString());
+            AccionCalificar accion = value instanceof AccionCalificar
+                    ? (AccionCalificar) value
+                    : new AccionCalificar(value == null ? "" : value.toString(), true);
+            setText(accion.texto());
             setForeground(Color.WHITE);
-            setBackground(new Color(0, 139, 139));
+            if (accion.habilitado()) {
+                setBackground(new Color(0, 139, 139));
+                setEnabled(true);
+            } else {
+                setBackground(new Color(169, 169, 169));
+                setEnabled(false);
+            }
             return this;
         }
     }
@@ -532,7 +650,12 @@ public class VentanaPlataforma extends JFrame {
 
         @Override
         public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
-            button.setText(value == null ? "" : value.toString());
+            AccionCalificar accion = value instanceof AccionCalificar
+                    ? (AccionCalificar) value
+                    : new AccionCalificar(value == null ? "" : value.toString(), true);
+            button.setText(accion.texto());
+            button.setEnabled(accion.habilitado());
+            button.setBackground(accion.habilitado() ? new Color(0, 139, 139) : new Color(169, 169, 169));
             rowIndex = row;
             return button;
         }
