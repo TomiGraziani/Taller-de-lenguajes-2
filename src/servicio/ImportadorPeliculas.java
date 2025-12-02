@@ -31,6 +31,26 @@ public class ImportadorPeliculas {
         this.peliculaDAO = peliculaDAO;
     }
 
+    /**
+     * ========= PARSEADOR NUMÉRICO A PRUEBA DE TODO =========
+     * Acepta valores corruptos, texto mezclado, comillas, etc.
+     */
+    private double parseDoubleSeguro(String valor) {
+        if (valor == null) return 0.0;
+
+        valor = valor.trim()
+                     .replace("\"", "")
+                     .replaceAll("[^0-9.,-]", "");
+
+        if (valor.isEmpty()) return 0.0;
+
+        try {
+            return Double.parseDouble(valor);
+        } catch (Exception e) {
+            return 0.0;
+        }
+    }
+
     public synchronized List<Pelicula> cargarPeliculas(Path csvPath) throws CargaArchivoException {
         if (!cachePeliculas.isEmpty()) {
             return cachePeliculas;
@@ -39,10 +59,12 @@ public class ImportadorPeliculas {
         try {
             Map<String, Integer> indices = new HashMap<>();
             try (BufferedReader reader = abrirLectorCsv(csvPath)) {
+
                 String header = reader.readLine();
                 if (header == null) {
                     throw new CargaArchivoException("El archivo CSV está vacío");
                 }
+
                 String[] columnas = separar(header);
                 for (int i = 0; i < columnas.length; i++) {
                     indices.put(columnas[i].trim().toLowerCase(), i);
@@ -50,7 +72,9 @@ public class ImportadorPeliculas {
 
                 String linea;
                 while ((linea = reader.readLine()) != null) {
+
                     String[] datos = separar(linea);
+
                     if (datos.length < columnas.length) {
                         continue;
                     }
@@ -73,12 +97,20 @@ public class ImportadorPeliculas {
                     }
 
                     Genero genero = mapearGenero(generoCsv);
-                    double duracionMin = duracion != null && !duracion.isBlank() ? Double.parseDouble(duracion) : 0.0;
-                    double ratingPromedio = rating != null && !rating.isBlank() ? Double.parseDouble(rating) : 0.0;
+                    double duracionMin = parseDoubleSeguro(duracion);
+                    double ratingPromedio = parseDoubleSeguro(rating);
                     int anio = obtenerAnio(fecha);
 
-                    peliculaDAO.insertar(titulo, director == null ? "" : director, resumen == null ? "" : resumen,
-                            duracionMin, genero.name(), ratingPromedio, anio, poster == null ? "" : poster);
+                    peliculaDAO.insertar(
+                        titulo,
+                        director == null ? "" : director,
+                        resumen == null ? "" : resumen,
+                        duracionMin,
+                        genero.name(),
+                        ratingPromedio,
+                        anio,
+                        poster == null ? "" : poster
+                    );
                 }
             }
 
@@ -87,6 +119,7 @@ public class ImportadorPeliculas {
             return cachePeliculas;
 
         } catch (IOException | RuntimeException e) {
+            e.printStackTrace();
             throw new CargaArchivoException("No se pudo importar el archivo de películas", e);
         }
     }
@@ -103,6 +136,7 @@ public class ImportadorPeliculas {
 
         InputStream recurso = getClass().getClassLoader()
                 .getResourceAsStream(csvPath.getFileName().toString());
+
         if (recurso != null) {
             return new BufferedReader(new InputStreamReader(recurso, StandardCharsets.UTF_8));
         }
@@ -112,12 +146,17 @@ public class ImportadorPeliculas {
 
     public synchronized List<Pelicula> obtenerDiezAleatoriasNoCalificadas(Path csvPath, List<Integer> idsYaCalificados)
             throws CargaArchivoException {
+
         List<Pelicula> peliculas = new ArrayList<>(cargarPeliculas(csvPath));
+
         peliculas.removeIf(p -> idsYaCalificados.contains(p.getId()));
+
         Collections.shuffle(peliculas, random);
+
         if (peliculas.isEmpty()) {
             peliculas = new ArrayList<>(cachePeliculas);
         }
+
         return peliculas.subList(0, Math.min(10, peliculas.size()));
     }
 
@@ -148,16 +187,19 @@ public class ImportadorPeliculas {
         if (generoCsv == null || generoCsv.isBlank()) {
             return Genero.DRAMA;
         }
+
         String genero = generoCsv.split("\\|")[0].trim().toUpperCase();
+
         try {
             return Genero.valueOf(genero);
         } catch (IllegalArgumentException e) {
             switch (genero) {
-                case "ACTION" -> { return Genero.ACCION; }
-                case "COMEDY" -> { return Genero.COMEDIA; }
-                case "HORROR", "THRILLER" -> { return Genero.TERROR; }
-                case "DOCUMENTARY" -> { return Genero.DOCUMENTAL; }
-                default -> { return Genero.DRAMA; }
+                case "ACTION": return Genero.ACCION;
+                case "COMEDY": return Genero.COMEDIA;
+                case "HORROR":
+                case "THRILLER": return Genero.TERROR;
+                case "DOCUMENTARY": return Genero.DOCUMENTAL;
+                default: return Genero.DRAMA;
             }
         }
     }

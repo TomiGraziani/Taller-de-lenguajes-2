@@ -49,7 +49,7 @@ public class VentanaPlataforma extends JFrame {
     private final ReseniaDAOjdbc reseniaDAO;
     private final ImportadorPeliculas importador;
     private final ConsultaOMDbService omdbService = new ConsultaOMDbService();
-    private final java.nio.file.Path csvPath = java.nio.file.Paths.get("movies_database.csv");
+    private final java.nio.file.Path csvPath = java.nio.file.Paths.get("src/movies_database.csv");
 
     private JTable tablaPeliculas;
     private DefaultTableModel modeloTabla;
@@ -186,25 +186,39 @@ public class VentanaPlataforma extends JFrame {
             }
 
             @Override
+           
             protected void done() {
                 try {
                     List<Pelicula> pelis = get();
                     poblarTabla(pelis);
                     layoutCentro.show(contenedorCentro, "TABLA");
                 } catch (Exception e) {
+                    e.printStackTrace();  // ⬅️ ESTO ES OBLIGATORIO
                     estadoLabel.setText("Error al cargar películas: " + e.getMessage());
                 }
             }
+
         };
         worker.execute();
     }
 
     private void poblarTabla(List<Pelicula> peliculas) {
         modeloTabla.setRowCount(0);
-        for (Pelicula p : peliculas) {
-            modeloTabla.addRow(new Object[]{p.getTitulo(), p.getGenero(), p.getAnio(), p.getRatingPromedio(), p.getPoster()});
+        try {
+            for (Pelicula p : peliculas) {
+                modeloTabla.addRow(new Object[]{
+                    p.getTitulo(),
+                    p.getGenero(),
+                    p.getAnio(),
+                    p.getRatingPromedio(),
+                    p.getPoster()
+                });
+            }
+        } catch (Exception e) {
+            e.printStackTrace();  // ⬅️ ESTO ES LO QUE NECESITAMOS
         }
     }
+
 
     private void calificarSeleccion() {
         int fila = tablaPeliculas.getSelectedRow();
