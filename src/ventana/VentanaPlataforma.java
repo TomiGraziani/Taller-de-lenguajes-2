@@ -46,6 +46,7 @@ import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 import javax.swing.table.TableColumn;
+import javax.swing.table.TableRowSorter;
 
 import dao.implementacion.ReseniaDAOjdbc;
 import dao.implementacion.PeliculaDAOjdbc;
@@ -215,6 +216,7 @@ public class VentanaPlataforma extends JFrame {
         tablaPeliculas.setShowGrid(false);
         tablaPeliculas.setFillsViewportHeight(true);
         tablaPeliculas.setIntercellSpacing(new Dimension(10, 10));
+        habilitarOrdenamientoTabla();
         configurarColumnasTabla();
         panelTabla.add(new JScrollPane(tablaPeliculas), BorderLayout.CENTER);
 
@@ -263,6 +265,14 @@ public class VentanaPlataforma extends JFrame {
         accionColumn.setPreferredWidth(120);
         accionColumn.setCellRenderer(new ButtonRenderer());
         accionColumn.setCellEditor(new ButtonEditor());
+    }
+
+    private void habilitarOrdenamientoTabla() {
+        TableRowSorter<DefaultTableModel> sorter = new TableRowSorter<>(modeloTabla);
+        sorter.setSortable(0, false);
+        sorter.setSortable(3, false);
+        sorter.setSortable(4, false);
+        tablaPeliculas.setRowSorter(sorter);
     }
 
     private void cargarPeliculas() {
