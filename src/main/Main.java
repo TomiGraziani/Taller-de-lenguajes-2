@@ -1,59 +1,30 @@
 package main;
 import conexion.ConexionBD;
+import controlador.PlataformaController;
 import dao.FactoryDAO;
 import servicio.PlataformaService;
 import tablas.TablasBD;
+import vista.ConsolaView;
 
 import java.sql.Connection;
-import java.util.Scanner;
 
 public class Main {
-	public static void main(String[] args) {
-		Connection cx = ConexionBD.getInstancia().getConexion();
-		TablasBD tablas = new TablasBD();
-		FactoryDAO factory = new FactoryDAO();
-		PlataformaService servicio = new PlataformaService();
-		Scanner sc = new Scanner(System.in);
-		int opcion;
+        public static void main(String[] args) {
+                Connection cx = ConexionBD.getInstancia().getConexion();
+                TablasBD tablas = new TablasBD();
+                FactoryDAO factory = new FactoryDAO();
+                PlataformaService servicio = new PlataformaService();
+                ConsolaView vista = new ConsolaView();
+                PlataformaController controlador = new PlataformaController(servicio, vista, factory);
 
-		try {
-			tablas.crearTablas(cx);
-			// --- MENÚ PRINCIPAL ---
-			do {
-				System.out.println("\n=== Plataforma Streaming ===");
-				System.out.println("1. Registrar Datos Personales");
-				System.out.println("2. Registrar Usuario");
-				System.out.println("3. Registrar Película");
-				System.out.println("4. Listar Usuarios");
-				System.out.println("5. Listar Películas");
-				System.out.println("6. Registrar Reseña");
-				System.out.println("7. Aprobar Reseña");
-				System.out.println("0. Salir");
-				System.out.print("Opción: ");
-				opcion = sc.nextInt();
-				sc.nextLine();
-	
-				switch (opcion) {
-				case 1 -> servicio.registrarDatosPersonales(factory.getDatosDAO());
-				case 2 -> servicio.registrarUsuario(factory.getDatosDAO(), factory.getUsuarioDAO());
-				case 3 -> servicio.registrarPelicula(factory.getPeliculaDAO());
-				case 4 -> servicio.listarUsuarios(factory.getUsuarioDAO());
-				case 5 -> servicio.listarPeliculas(factory.getPeliculaDAO());
-				case 6 -> servicio.registrarResenia(factory.getUsuarioDAO(), factory.getPeliculaDAO(),
-						factory.getReseniaDAO());
-				case 7 -> servicio.aprobarResenia(factory.getReseniaDAO());
-				case 0 -> System.out.println("Saliendo...");
-				default -> System.out.println("⚠️ Opción inválida.");
-				}
-			} while (opcion != 0);
-		} catch(Exception e) {
-			System.out.println("Error: "+ e);
-		} finally {
-			sc.close();
-			ConexionBD.getInstancia().desconectar();
-			System.out.println("Fin del programa.");
-		}
-
-		
-	}
+                try {
+                        tablas.crearTablas(cx);
+                        controlador.iniciar();
+                } catch(Exception e) {
+                        System.out.println("Error: "+ e);
+                } finally {
+                        ConexionBD.getInstancia().desconectar();
+                        System.out.println("Fin del programa.");
+                }
+        }
 }
