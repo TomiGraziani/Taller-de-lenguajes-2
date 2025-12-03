@@ -207,14 +207,25 @@ public class VentanaPlataforma extends JFrame {
         estadoLabel.setFont(new Font("Roboto", Font.BOLD, 18));
         estadoLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 
+        JLabel loginLabel = new JLabel("🔒 Iniciando sesión y preparando tu catálogo", JLabel.CENTER);
+        loginLabel.setFont(new Font("Roboto", Font.PLAIN, 15));
+        loginLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
         barraProgreso = new JProgressBar();
         barraProgreso.setIndeterminate(true);
+        barraProgreso.setStringPainted(true);
+        barraProgreso.setString("Preparando recomendaciones...");
+        barraProgreso.setForeground(new Color(0, 139, 139));
+        barraProgreso.setPreferredSize(new Dimension(320, 24));
         barraProgreso.setBorder(BorderFactory.createEmptyBorder(12, 40, 0, 40));
         barraProgreso.setAlignmentX(Component.CENTER_ALIGNMENT);
 
         contenidoLoading.add(Box.createVerticalGlue());
         contenidoLoading.add(iconoCarga);
         contenidoLoading.add(estadoLabel);
+        contenidoLoading.add(Box.createVerticalStrut(8));
+        contenidoLoading.add(loginLabel);
+        contenidoLoading.add(Box.createVerticalStrut(12));
         contenidoLoading.add(barraProgreso);
         contenidoLoading.add(Box.createVerticalGlue());
         panelLoading.add(contenidoLoading, BorderLayout.CENTER);
