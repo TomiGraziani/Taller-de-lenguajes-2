@@ -1,5 +1,6 @@
 package ventana;
 
+import java.awt.BasicStroke;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Color;
@@ -12,6 +13,7 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.Image;
+import java.awt.RenderingHints;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
@@ -28,6 +30,8 @@ import java.util.stream.Collectors;
 
 import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.DefaultCellEditor;
 import javax.swing.JButton;
 import javax.swing.JComponent;
@@ -37,6 +41,7 @@ import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextArea;
@@ -76,6 +81,8 @@ public class VentanaPlataforma extends JFrame {
     private CardLayout layoutCentro;
     private JPanel contenedorCentro;
     private JLabel estadoLabel;
+    private JLabel iconoCarga;
+    private JProgressBar barraProgreso;
     private JTextField campoBusqueda;
     private ImageIcon posterPlaceholder;
     private final Set<Integer> peliculasCalificadas = new HashSet<>();
@@ -188,9 +195,29 @@ public class VentanaPlataforma extends JFrame {
 
         JPanel panelLoading = new JPanel(new BorderLayout());
         panelLoading.setBorder(BorderFactory.createEmptyBorder(30, 30, 30, 30));
+        JPanel contenidoLoading = new JPanel();
+        contenidoLoading.setOpaque(false);
+        contenidoLoading.setLayout(new BoxLayout(contenidoLoading, BoxLayout.Y_AXIS));
+
+        iconoCarga = new JLabel(crearIconoCarga());
+        iconoCarga.setAlignmentX(Component.CENTER_ALIGNMENT);
+        iconoCarga.setBorder(BorderFactory.createEmptyBorder(0, 0, 12, 0));
+
         estadoLabel = new JLabel("Un momento por favor... cargando películas", JLabel.CENTER);
         estadoLabel.setFont(new Font("Roboto", Font.BOLD, 18));
-        panelLoading.add(estadoLabel, BorderLayout.CENTER);
+        estadoLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        barraProgreso = new JProgressBar();
+        barraProgreso.setIndeterminate(true);
+        barraProgreso.setBorder(BorderFactory.createEmptyBorder(12, 40, 0, 40));
+        barraProgreso.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        contenidoLoading.add(Box.createVerticalGlue());
+        contenidoLoading.add(iconoCarga);
+        contenidoLoading.add(estadoLabel);
+        contenidoLoading.add(barraProgreso);
+        contenidoLoading.add(Box.createVerticalGlue());
+        panelLoading.add(contenidoLoading, BorderLayout.CENTER);
 
         JPanel panelTabla = new JPanel(new BorderLayout());
         modeloTabla = new DefaultTableModel(new Object[]{"Poster", "Título", "Género", "Resumen", "Acción"}, 0) {
@@ -548,6 +575,20 @@ public class VentanaPlataforma extends JFrame {
         } catch (Exception e) {
             return posterPlaceholder;
         }
+    }
+
+    private ImageIcon crearIconoCarga() {
+        int tamano = 140;
+        BufferedImage img = new BufferedImage(tamano, tamano, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = img.createGraphics();
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g.setStroke(new BasicStroke(12f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        g.setColor(new Color(0, 139, 139));
+        g.drawArc(16, 16, tamano - 32, tamano - 32, 0, 300);
+        g.setColor(new Color(0, 139, 139, 90));
+        g.drawArc(16, 16, tamano - 32, tamano - 32, 310, 50);
+        g.dispose();
+        return new ImageIcon(img);
     }
 
     private ImageIcon crearPlaceholder() {
