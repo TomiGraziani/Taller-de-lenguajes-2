@@ -348,7 +348,8 @@ public class VentanaPlataforma extends JFrame {
     }
 
     private void calificarFila(int fila) {
-        String titulo = (String) modeloTabla.getValueAt(fila, 1);
+        int filaModelo = tablaPeliculas.convertRowIndexToModel(fila);
+        String titulo = (String) modeloTabla.getValueAt(filaModelo, 1);
         Pelicula pelicula = peliculasPorTitulo.getOrDefault(titulo, peliculaDAO.buscarPorTitulo(titulo));
         if (pelicula == null) {
             JOptionPane.showMessageDialog(this, "No se encontró la película seleccionada");
@@ -360,7 +361,7 @@ public class VentanaPlataforma extends JFrame {
             return;
         }
 
-        mostrarDialogoCalificacion(pelicula, fila);
+        mostrarDialogoCalificacion(pelicula, filaModelo);
     }
 
     private void mostrarDialogoCalificacion(Pelicula pelicula, int filaTabla) {
@@ -637,7 +638,7 @@ public class VentanaPlataforma extends JFrame {
                 setBackground(new Color(0, 139, 139));
                 setEnabled(true);
             } else {
-                setBackground(new Color(169, 169, 169));
+                setBackground(new Color(128, 128, 128, 200));
                 setEnabled(false);
             }
             return this;
@@ -657,6 +658,9 @@ public class VentanaPlataforma extends JFrame {
             button.setForeground(Color.WHITE);
             button.setBackground(new Color(0, 139, 139));
             button.addActionListener(e -> {
+                if (!button.isEnabled()) {
+                    return;
+                }
                 fireEditingStopped();
                 calificarFila(rowIndex);
             });
@@ -669,7 +673,7 @@ public class VentanaPlataforma extends JFrame {
                     : new AccionCalificar(value == null ? "" : value.toString(), true);
             button.setText(accion.texto());
             button.setEnabled(accion.habilitado());
-            button.setBackground(accion.habilitado() ? new Color(0, 139, 139) : new Color(169, 169, 169));
+            button.setBackground(accion.habilitado() ? new Color(0, 139, 139) : new Color(128, 128, 128, 200));
             rowIndex = row;
             return button;
         }
