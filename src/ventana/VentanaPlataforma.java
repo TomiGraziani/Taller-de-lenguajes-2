@@ -367,7 +367,7 @@ public class VentanaPlataforma extends JFrame {
                     p.getTitulo(),
                     p.getGenero(),
                     resumir(p.getSinopsis()),
-                    new AccionCalificar(yaCalificada ? "Calificada" : "Calificar", !yaCalificada)
+                    new AccionCalificar("Calificar", !yaCalificada)
                 });
             }
         } catch (Exception e) {
@@ -448,7 +448,7 @@ public class VentanaPlataforma extends JFrame {
                 String fecha = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
                 reseniaDAO.insertar(calificacion, comentario, 0, fecha, usuario.getId(), pelicula.getId());
                 peliculasCalificadas.add(pelicula.getId());
-                modeloTabla.setValueAt(new AccionCalificar("Calificada", false), filaTabla, 4);
+                modeloTabla.setValueAt(new AccionCalificar("Calificar", false), filaTabla, 4);
                 JOptionPane.showMessageDialog(dialogo, "Calificación guardada");
                 dialogo.dispose();
             } catch (DatosIncompletosException ex) {
