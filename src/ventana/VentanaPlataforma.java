@@ -47,7 +47,6 @@ import javax.swing.JTable;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
-import javax.swing.SwingWorker;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
@@ -319,37 +318,31 @@ public class VentanaPlataforma extends JFrame {
 
     private void cargarPeliculas() {
         layoutCentro.show(contenedorCentro, "LOADING");
-        SwingWorker<List<Pelicula>, Void> worker = new SwingWorker<>() {
-            private List<Integer> calificadas;
-            @Override
-            protected List<Pelicula> doInBackground() throws Exception {
+        Thread hiloCarga = new Thread(() -> {
+            List<Integer> calificadas = List.of();
+            try {
                 calificadas = reseniaDAO.listarPorUsuario(usuario.getId()).stream()
                         .map(r -> r.getIdPelicula()).collect(Collectors.toList());
+                List<Pelicula> pelis;
                 if (calificadas.isEmpty()) {
-                    return importador.obtenerTopDiez(csvPath);
+                    pelis = importador.obtenerTopDiez(csvPath);
+                } else {
+                    pelis = importador.obtenerDiezAleatoriasNoCalificadas(csvPath, calificadas);
                 }
-                return importador.obtenerDiezAleatoriasNoCalificadas(csvPath, calificadas);
-            }
-
-            @Override
-
-            protected void done() {
-                try {
-                    List<Pelicula> pelis = get();
+                final List<Integer> calificadasFinal = calificadas;
+                SwingUtilities.invokeLater(() -> {
                     peliculasCalificadas.clear();
-                    if (calificadas != null) {
-                        peliculasCalificadas.addAll(calificadas);
-                    }
+                    peliculasCalificadas.addAll(calificadasFinal);
                     poblarTabla(pelis);
                     layoutCentro.show(contenedorCentro, "TABLA");
-                } catch (Exception e) {
-                    e.printStackTrace();  // ⬅️ ESTO ES OBLIGATORIO
-                    estadoLabel.setText("Error al cargar películas: " + e.getMessage());
-                }
+                });
+            } catch (Exception e) {
+                e.printStackTrace();  // ⬅️ ESTO ES OBLIGATORIO
+                final String mensajeError = e.getMessage();
+                SwingUtilities.invokeLater(() -> estadoLabel.setText("Error al cargar películas: " + mensajeError));
             }
-
-        };
-        worker.execute();
+        });
+        hiloCarga.start();
     }
 
     private void poblarTabla(List<Pelicula> peliculas) {
@@ -503,25 +496,22 @@ public class VentanaPlataforma extends JFrame {
             return;
         }
 
-        SwingWorker<Void, Void> worker = new SwingWorker<>() {
-            private ResultadoOMDb resultado;
-            private Exception error;
+        Thread hiloBusqueda = new Thread(new Runnable() {
             @Override
-            protected Void doInBackground() {
+            public void run() {
+                ResultadoOMDb resultado = null;
+                Exception error = null;
                 try {
                     resultado = omdbService.consultarPelicula(titulo);
                 } catch (ConsultaApiException e) {
                     error = e;
                 }
-                return null;
+                final ResultadoOMDb resultadoFinal = resultado;
+                final Exception errorFinal = error;
+                SwingUtilities.invokeLater(() -> mostrarVentanaResultado(titulo, resultadoFinal, errorFinal));
             }
-
-            @Override
-            protected void done() {
-                mostrarVentanaResultado(titulo, resultado, error);
-            }
-        };
-        worker.execute();
+        });
+        hiloBusqueda.start();
     }
 
     private void mostrarVentanaResultado(String tituloBuscado, ResultadoOMDb resultado, Exception error) {
