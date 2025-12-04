@@ -5,8 +5,7 @@ import java.awt.*;
 import javax.swing.*;
 
 import componente.CampoValidable;
-import dao.implementacion.*;
-import modelo.DatosPersonales;
+import dto.RegistroFormularioDTO;
 import validacion.*;
 
 public class FormularioRegistro extends JPanel {
@@ -37,9 +36,8 @@ public class FormularioRegistro extends JPanel {
     
     private JButton btnRegistrar;
 
-    public FormularioRegistro(Main mainWindow, DatosPersonalesDAOjdbc datosPersonalesDAO, UsuarioDAOjdbc usuarioDAO) {
+    public FormularioRegistro() {
         inicializarComponentes();
-        configurarEventos(mainWindow, datosPersonalesDAO, usuarioDAO);
     }
 
     private void inicializarComponentes() {
@@ -143,72 +141,35 @@ public class FormularioRegistro extends JPanel {
         return fila + 1;
     }
 
-    private void configurarEventos(Main mainWindow, DatosPersonalesDAOjdbc datosPersonalesDAO, UsuarioDAOjdbc usuarioDAO) {
-    	
-    	btnRegistrar.addActionListener(e -> {
-    		String nombre = campoNombre.getText();
-            String apellido = campoApellido.getText();
-            String dni = campoDNI.getText();
-            String nombreUsuario = campoNombreUsuario.getText();
-            String email = campoEmail.getText();
-            String contrasenia = new String(campoContrasenia.getPassword());
-    		
-            // Validar que no haya campos vacios
-            if (nombre.isEmpty() || apellido.isEmpty() || dni.isEmpty() || nombreUsuario.isEmpty() || email.isEmpty() || contrasenia.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Todos los campos son obligatorios");
-                return;
-            }
-
-            // Validar que no haya errores visibles
-            if (!errorNombre.getText().isEmpty() ||
-                !errorApellido.getText().isEmpty() ||
-                !errorDNI.getText().isEmpty() ||
-                !errorContrasenia.getText().isEmpty()
-            ) {
-                JOptionPane.showMessageDialog(this, "Corrija los errores antes de continuar");
-                return;
-            }
-
-            long dniNumero;
-            try {
-                dniNumero = Long.parseLong(dni);
-            } catch (NumberFormatException ex) {
-                JOptionPane.showMessageDialog(this, "DNI inválido");
-                return;
-            }
-
-            if (datosPersonalesDAO.buscarPorDNI(dniNumero) != null) {
-                JOptionPane.showMessageDialog(this, "El DNI ya se encuentra registrado");
-                return;
-            }
-            if (usuarioDAO.buscarPorEmail(email) != null) {
-                JOptionPane.showMessageDialog(this, "El email ya se encuentra registrado");
-                return;
-            }
-            if (usuarioDAO.buscarPorNombreUsuario(nombreUsuario) != null) {
-                JOptionPane.showMessageDialog(this, "El nombre de usuario ya existe");
-                return;
-            }
-
-            // Guardar en BD
-            datosPersonalesDAO.insertar(nombre, apellido, dniNumero);
-            DatosPersonales nuevo = datosPersonalesDAO.buscarPorDNI(dniNumero);
-            usuarioDAO.insertar(nombreUsuario, email, contrasenia, nuevo.getId());
-
-            JOptionPane.showMessageDialog(this, "Usuario registrado correctamente");
-
-            limpiarCampos();
-            mainWindow.mostrarLogin();
-        });
-
-    }
-    
     public void limpiarCampos() {
-    	campoNombre.setText("");
-    	campoApellido.setText("");
-    	campoDNI.setText("");
-    	campoNombreUsuario.setText("");
-    	campoEmail.setText("");
-    	campoContrasenia.setText("");
+        campoNombre.setText("");
+        campoApellido.setText("");
+        campoDNI.setText("");
+        campoNombreUsuario.setText("");
+        campoEmail.setText("");
+        campoContrasenia.setText("");
+    }
+
+    public JButton getBtnRegistrar() {
+        return btnRegistrar;
+    }
+
+    public RegistroFormularioDTO obtenerDatosRegistro() {
+        return new RegistroFormularioDTO(
+                campoNombre.getText().trim(),
+                campoApellido.getText().trim(),
+                campoDNI.getText().trim(),
+                campoNombreUsuario.getText().trim(),
+                campoEmail.getText().trim(),
+                new String(campoContrasenia.getPassword())
+        );
+    }
+
+    public void mostrarError(String mensaje) {
+        JOptionPane.showMessageDialog(this, mensaje, "Error", JOptionPane.ERROR_MESSAGE);
+    }
+
+    public void mostrarMensaje(String mensaje) {
+        JOptionPane.showMessageDialog(this, mensaje);
     }
 }
