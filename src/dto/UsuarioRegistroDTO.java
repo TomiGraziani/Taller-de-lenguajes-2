@@ -1,4 +1,4 @@
-package vista.dto;
+package dto;
 
 import modelo.DatosPersonales;
 

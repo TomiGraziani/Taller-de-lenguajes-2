@@ -1,16 +1,20 @@
 package servicio;
 
 import comparador.*;
-import dao.implementacion.*;
+import dao.FactoryDAO;
+import dao.implementacion.DatosPersonalesDAOjdbc;
+import dao.implementacion.PeliculaDAOjdbc;
+import dao.implementacion.ReseniaDAOjdbc;
+import dao.implementacion.UsuarioDAOjdbc;
 import enumerativo.Genero;
 import modelo.DatosPersonales;
 import modelo.Pelicula;
 import modelo.Resenia;
 import modelo.Usuario;
-import vista.dto.DatosPersonalesDTO;
-import vista.dto.PeliculaDTO;
-import vista.dto.ReseniaDTO;
-import vista.dto.UsuarioRegistroDTO;
+import dto.DatosPersonalesDTO;
+import dto.PeliculaDTO;
+import dto.ReseniaDTO;
+import dto.UsuarioRegistroDTO;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -19,7 +23,13 @@ import java.util.List;
 
 public class PlataformaService {
 
-    public String registrarDatosPersonales(DatosPersonalesDAOjdbc datosDAO, DatosPersonalesDTO datosDTO) {
+    private final FactoryDAO factory;
+
+    public PlataformaService(FactoryDAO factory) {
+        this.factory = factory;
+    }
+
+    public String registrarDatosPersonales(DatosPersonalesDTO datosDTO) {
         if (datosDTO == null) {
             return "❌ Datos personales incompletos.";
         }
@@ -32,6 +42,7 @@ public class PlataformaService {
         }
 
         String dniStr = String.valueOf(datosDTO.getDni());
+        DatosPersonalesDAOjdbc datosDAO = factory.getDatosDAO();
         if (dniStr.length() != 11 || datosDAO.buscarPorDNI(datosDTO.getDni()) != null) {
             errores.add("❌ Error: DNI inválido.");
         }
@@ -44,7 +55,7 @@ public class PlataformaService {
         return "✅ Datos personales registrados con éxito.";
     }
 
-    public String registrarUsuario(DatosPersonalesDAOjdbc datosDAO, UsuarioDAOjdbc usuarioDAO, UsuarioRegistroDTO dto) {
+    public String registrarUsuario(UsuarioRegistroDTO dto) {
         if (dto == null) {
             return "❌ Datos de usuario incompletos.";
         }
@@ -68,11 +79,11 @@ public class PlataformaService {
             return String.join("\n", errores);
         }
 
-        usuarioDAO.insertar(dto.getNombreUsuario(), dto.getEmail(), dto.getContrasenia(), seleccionada.getId());
+        factory.getUsuarioDAO().insertar(dto.getNombreUsuario(), dto.getEmail(), dto.getContrasenia(), seleccionada.getId());
         return "✅ Usuario registrado con éxito.";
     }
 
-    public String registrarPelicula(PeliculaDAOjdbc peliculaDAO, PeliculaDTO dto) {
+    public String registrarPelicula(PeliculaDTO dto) {
         if (dto == null) {
             return "❌ Datos de película incompletos.";
         }
@@ -81,7 +92,7 @@ public class PlataformaService {
             return "❌ Género inválido.";
         }
 
-        peliculaDAO.insertar(dto.getTitulo(), dto.getDirector(), dto.getResumen(), dto.getDuracion(), dto.getGenero());
+        factory.getPeliculaDAO().insertar(dto.getTitulo(), dto.getDirector(), dto.getResumen(), dto.getDuracion(), dto.getGenero());
         return "✅ Película registrada con éxito.";
     }
 
@@ -92,7 +103,8 @@ public class PlataformaService {
         return false;
     }
 
-    public List<Usuario> listarUsuarios(UsuarioDAOjdbc usuarioDAO, int criterio) {
+    public List<Usuario> listarUsuarios(int criterio) {
+        UsuarioDAOjdbc usuarioDAO = factory.getUsuarioDAO();
         List<Usuario> usuarios = usuarioDAO.listarTodos();
         switch (criterio) {
             case 1 -> usuarios.sort(new ComparadorPorNombreDeUsuario());
@@ -102,7 +114,8 @@ public class PlataformaService {
         return usuarios;
     }
 
-    public List<Pelicula> listarPeliculas(PeliculaDAOjdbc peliculaDAO, int criterio) {
+    public List<Pelicula> listarPeliculas(int criterio) {
+        PeliculaDAOjdbc peliculaDAO = factory.getPeliculaDAO();
         List<Pelicula> pelis = peliculaDAO.listarTodas();
         switch (criterio) {
             case 1 -> pelis.sort(new ComparadorPorTitulo());
@@ -113,27 +126,38 @@ public class PlataformaService {
         return pelis;
     }
 
-    public String registrarResenia(UsuarioDAOjdbc usuarioDAO, ReseniaDAOjdbc reseniaDAO, ReseniaDTO dto) {
+    public List<Pelicula> listarPeliculas() {
+        return factory.getPeliculaDAO().listarTodas();
+    }
+
+    public List<DatosPersonales> listarDatosPersonales() {
+        return factory.getDatosDAO().listarTodos();
+    }
+
+    public String registrarResenia(ReseniaDTO dto) {
         if (dto == null) {
             return "❌ Datos de reseña incompletos.";
         }
 
+        UsuarioDAOjdbc usuarioDAO = factory.getUsuarioDAO();
         Usuario u = usuarioDAO.buscarPorCredenciales(dto.getNombreUsuario(), dto.getContrasenia());
         if (u == null) {
             return "❌ Credenciales inválidas.";
         }
 
         String fecha = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        ReseniaDAOjdbc reseniaDAO = factory.getReseniaDAO();
         reseniaDAO.insertar(dto.getCalificacion(), dto.getComentario(), 0, fecha, u.getId(), dto.getSeleccionada().getId());
         return "✅ Reseña registrada con éxito.";
     }
 
-    public String aprobarResenia(ReseniaDAOjdbc reseniaDAO, int id) {
+    public String aprobarResenia(int id) {
+        ReseniaDAOjdbc reseniaDAO = factory.getReseniaDAO();
         reseniaDAO.aprobar(id);
         return "✅ Reseña aprobada.";
     }
 
-    public List<Resenia> listarReseniasPendientes(ReseniaDAOjdbc reseniaDAO) {
-        return reseniaDAO.listarNoAprobadas();
+    public List<Resenia> listarReseniasPendientes() {
+        return factory.getReseniaDAO().listarNoAprobadas();
     }
 }

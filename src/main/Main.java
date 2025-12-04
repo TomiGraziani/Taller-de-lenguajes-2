@@ -13,9 +13,9 @@ public class Main {
                 Connection cx = ConexionBD.getInstancia().getConexion();
                 TablasBD tablas = new TablasBD();
                 FactoryDAO factory = new FactoryDAO();
-                PlataformaService servicio = new PlataformaService();
+                PlataformaService servicio = new PlataformaService(factory);
                 ConsolaView vista = new ConsolaView();
-                PlataformaController controlador = new PlataformaController(servicio, vista, factory);
+                PlataformaController controlador = new PlataformaController(servicio, vista);
 
                 try {
                         tablas.crearTablas(cx);
