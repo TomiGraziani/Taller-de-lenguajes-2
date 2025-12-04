@@ -1,18 +1,15 @@
 package controlador;
 
-import dao.FactoryDAO;
-import dao.implementacion.DatosPersonalesDAOjdbc;
-import dao.implementacion.PeliculaDAOjdbc;
-import dao.implementacion.ReseniaDAOjdbc;
-import dao.implementacion.UsuarioDAOjdbc;
+import dto.DatosPersonalesDTO;
+import dto.PeliculaDTO;
+import dto.ReseniaDTO;
+import dto.UsuarioRegistroDTO;
 import modelo.DatosPersonales;
 import modelo.Pelicula;
+import modelo.Resenia;
+import modelo.Usuario;
 import servicio.PlataformaService;
 import vista.ConsolaView;
-import vista.dto.DatosPersonalesDTO;
-import vista.dto.PeliculaDTO;
-import vista.dto.ReseniaDTO;
-import vista.dto.UsuarioRegistroDTO;
 
 import java.util.List;
 
@@ -20,12 +17,9 @@ public class PlataformaController {
 
     private final PlataformaService servicio;
     private final ConsolaView vista;
-    private final FactoryDAO factory;
-
-    public PlataformaController(PlataformaService servicio, ConsolaView vista, FactoryDAO factory) {
+    public PlataformaController(PlataformaService servicio, ConsolaView vista) {
         this.servicio = servicio;
         this.vista = vista;
-        this.factory = factory;
     }
 
     public void iniciar() {
@@ -48,13 +42,12 @@ public class PlataformaController {
 
     private void registrarDatosPersonales() {
         DatosPersonalesDTO dto = vista.solicitarDatosPersonales();
-        String resultado = servicio.registrarDatosPersonales(factory.getDatosDAO(), dto);
+        String resultado = servicio.registrarDatosPersonales(dto);
         vista.mostrarMensaje(resultado);
     }
 
     private void registrarUsuario() {
-        DatosPersonalesDAOjdbc datosDAO = factory.getDatosDAO();
-        List<DatosPersonales> personas = datosDAO.listarTodos();
+        List<DatosPersonales> personas = servicio.listarDatosPersonales();
         if (personas.isEmpty()) {
             vista.mostrarMensaje("⚠️ No hay datos personales cargados. Primero registre una persona.");
             return;
@@ -63,7 +56,7 @@ public class PlataformaController {
         if (dto == null) {
             return;
         }
-        String resultado = servicio.registrarUsuario(datosDAO, factory.getUsuarioDAO(), dto);
+        String resultado = servicio.registrarUsuario(dto);
         vista.mostrarMensaje(resultado);
     }
 
@@ -72,42 +65,40 @@ public class PlataformaController {
         if (dto == null) {
             return;
         }
-        String resultado = servicio.registrarPelicula(factory.getPeliculaDAO(), dto);
+        String resultado = servicio.registrarPelicula(dto);
         vista.mostrarMensaje(resultado);
     }
 
     private void listarUsuarios() {
         int criterio = vista.solicitarOrdenUsuarios();
-        List<modelo.Usuario> usuarios = servicio.listarUsuarios(factory.getUsuarioDAO(), criterio);
+        List<Usuario> usuarios = servicio.listarUsuarios(criterio);
         vista.mostrarUsuarios(usuarios);
     }
 
     private void listarPeliculas() {
         int criterio = vista.solicitarOrdenPeliculas();
-        List<Pelicula> pelis = servicio.listarPeliculas(factory.getPeliculaDAO(), criterio);
+        List<Pelicula> pelis = servicio.listarPeliculas(criterio);
         vista.mostrarPeliculas(pelis);
     }
 
     private void registrarResenia() {
-        PeliculaDAOjdbc peliculaDAO = factory.getPeliculaDAO();
-        List<Pelicula> pelis = peliculaDAO.listarTodas();
+        List<Pelicula> pelis = servicio.listarPeliculas();
         ReseniaDTO dto = vista.solicitarResenia(pelis);
         if (dto == null) {
             return;
         }
-        String resultado = servicio.registrarResenia(factory.getUsuarioDAO(), factory.getReseniaDAO(), dto);
+        String resultado = servicio.registrarResenia(dto);
         vista.mostrarMensaje(resultado);
     }
 
     private void aprobarResenia() {
-        ReseniaDAOjdbc reseniaDAO = factory.getReseniaDAO();
-        List<modelo.Resenia> lista = servicio.listarReseniasPendientes(reseniaDAO);
+        List<Resenia> lista = servicio.listarReseniasPendientes();
         Integer id = vista.solicitarReseniaAAprobar(lista);
         if (id == null) {
             return;
         }
         if (vista.confirmar("¿Confirmar aprobación?")) {
-            String resultado = servicio.aprobarResenia(reseniaDAO, id);
+            String resultado = servicio.aprobarResenia(id);
             vista.mostrarMensaje(resultado);
         } else {
             vista.mostrarMensaje("Operación cancelada.");

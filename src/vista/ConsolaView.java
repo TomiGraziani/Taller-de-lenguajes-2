@@ -9,10 +9,10 @@ import modelo.DatosPersonales;
 import modelo.Pelicula;
 import modelo.Resenia;
 import modelo.Usuario;
-import vista.dto.DatosPersonalesDTO;
-import vista.dto.PeliculaDTO;
-import vista.dto.ReseniaDTO;
-import vista.dto.UsuarioRegistroDTO;
+import dto.DatosPersonalesDTO;
+import dto.PeliculaDTO;
+import dto.ReseniaDTO;
+import dto.UsuarioRegistroDTO;
 
 public class ConsolaView {
     private final Scanner scanner = new Scanner(System.in);

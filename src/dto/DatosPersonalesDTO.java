@@ -1,4 +1,4 @@
-package vista.dto;
+package dto;
 
 public class DatosPersonalesDTO {
     private final String nombre;
