@@ -1,11 +1,7 @@
 package ventana;
 import javax.swing.*;
 
-import dao.implementacion.DatosPersonalesDAOjdbc;
-import dao.implementacion.UsuarioDAOjdbc;
-
 import java.awt.*;
-import java.awt.event.*;
 
 public class PanelRegistro extends JPanel {
 	
@@ -19,19 +15,16 @@ public class PanelRegistro extends JPanel {
 	private JLabel label;
     private JButton btnVolver;
 
-    public PanelRegistro(Main mainWindow, DatosPersonalesDAOjdbc datosPersonalesDAO, UsuarioDAOjdbc usuarioDAO) {
-    	
-        
-        inicializarComponentes(mainWindow, datosPersonalesDAO, usuarioDAO);
-        configurarEventos(mainWindow);
+    public PanelRegistro() {
+        inicializarComponentes();
     }
 
-    private void inicializarComponentes(Main mainWindow, DatosPersonalesDAOjdbc datosPersonalesDAO, UsuarioDAOjdbc usuarioDAO) {
-    	setLayout(new BorderLayout());
-    	
-    	norte = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
-    	centro = new FormularioRegistro(mainWindow, datosPersonalesDAO, usuarioDAO);
-    	sur = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+    private void inicializarComponentes() {
+        setLayout(new BorderLayout());
+
+        norte = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        centro = new FormularioRegistro();
+        sur = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
 
     	titulo = new JLabel("Formulario de Registro");
     	titulo.setFont(new Font("Roboto", Font.BOLD, 26));
@@ -56,22 +49,15 @@ public class PanelRegistro extends JPanel {
     	add(sur, BorderLayout.SOUTH);
     }
 
-    private void configurarEventos(Main mainWindow) {
-
-        btnVolver.addActionListener(e -> mainWindow.mostrarLogin());
-        
-        btnVolver.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseEntered(MouseEvent e) {
-                btnVolver.setForeground(new Color(60, 0, 200));
-            }
-
-            @Override
-            public void mouseExited(MouseEvent e) {
-                btnVolver.setForeground(Color.BLUE);
-            }
-        });
-        
+    public JButton getBtnVolver() {
+        return btnVolver;
     }
 
+    public FormularioRegistro getFormularioRegistro() {
+        return (FormularioRegistro) centro;
+    }
+
+    public void cambiarColorVolver(Color color) {
+        btnVolver.setForeground(color);
+    }
 }

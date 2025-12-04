@@ -1,10 +1,7 @@
 package ventana;
 import javax.swing.*;
 
-import dao.implementacion.UsuarioDAOjdbc;
-
 import java.awt.*;
-import java.awt.event.*;
 
 public class PanelLogin extends JPanel {
 	
@@ -18,17 +15,16 @@ public class PanelLogin extends JPanel {
 	private JLabel label;
     private JButton btnRegistrar;
 
-    public PanelLogin(Main mainWindow, UsuarioDAOjdbc usuarioDAO) {
-        inicializarComponentes(mainWindow, usuarioDAO);
-        configurarEventos(mainWindow);
+    public PanelLogin() {
+        inicializarComponentes();
     }
 
-    private void inicializarComponentes(Main mainWindow, UsuarioDAOjdbc usuarioDAO) {
-    	setLayout(new BorderLayout());
-    	
-    	norte = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
-    	centro = new FormularioLogin(mainWindow, usuarioDAO);
-    	sur = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+    private void inicializarComponentes() {
+        setLayout(new BorderLayout());
+
+        norte = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        centro = new FormularioLogin();
+        sur = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
 
     	titulo = new JLabel("Inicio de sesion");
     	titulo.setFont(new Font("Roboto", Font.BOLD, 26));
@@ -53,23 +49,16 @@ public class PanelLogin extends JPanel {
     	add(sur, BorderLayout.SOUTH);
     }
 
-    private void configurarEventos(Main mainWindow) {
-
-    	btnRegistrar.addActionListener(e -> mainWindow.mostrarRegistro());
-        
-    	btnRegistrar.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseEntered(MouseEvent e) {
-            	btnRegistrar.setForeground(new Color(60, 0, 200));
-            }
-
-            @Override
-            public void mouseExited(MouseEvent e) {
-            	btnRegistrar.setForeground(Color.BLUE);
-            }
-        });
-        
+    public JButton getBtnRegistrar() {
+        return btnRegistrar;
     }
 
+    public FormularioLogin getFormularioLogin() {
+        return (FormularioLogin) centro;
+    }
+
+    public void cambiarColorRegistrar(Color color) {
+        btnRegistrar.setForeground(color);
+    }
 }
     

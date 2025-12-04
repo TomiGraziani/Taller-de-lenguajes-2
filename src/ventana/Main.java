@@ -11,8 +11,11 @@ import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 
 import conexion.ConexionBD;
+import controlador.LoginController;
+import controlador.RegistroController;
 import dao.FactoryDAO;
 import modelo.Usuario;
+import servicio.AutenticacionService;
 import tablas.TablasBD;
 
 import java.sql.Connection;
@@ -26,9 +29,13 @@ public class Main extends JFrame{
         private Panel panelDer;
         private JPanel panelIzq;
         private CardLayout cardLayout;
+        private PanelLogin panelLogin;
+        private PanelRegistro panelRegistro;
+        private final AutenticacionService autenticacionService;
 
         public Main(FactoryDAO factory) {
                 this.factory = factory;
+                this.autenticacionService = new AutenticacionService(factory.getUsuarioDAO(), factory.getDatosDAO());
                 cargarFuenteRoboto();
                 inicializarComponentes();
         }
@@ -42,9 +49,12 @@ public class Main extends JFrame{
                 cardLayout = new CardLayout();
                 panelIzq.setLayout(cardLayout);
 
+                panelLogin = new PanelLogin();
+                panelRegistro = new PanelRegistro();
+
         // Agregamos las ventanas al contenedor
-                panelIzq.add(new PanelLogin(this, this.factory.getUsuarioDAO()), "LOGIN");
-                panelIzq.add(new PanelRegistro(this, this.factory.getDatosDAO(), this.factory.getUsuarioDAO()), "REGISTRO");
+                panelIzq.add(panelLogin, "LOGIN");
+                panelIzq.add(panelRegistro, "REGISTRO");
 
 
         GridBagConstraints c = new GridBagConstraints();
@@ -65,9 +75,12 @@ public class Main extends JFrame{
 
                 // Configuración final de la ventana
                 setSize(1000, 750);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null); // Centrar ventana
         setVisible(true);
+
+                new LoginController(this, panelLogin, autenticacionService);
+                new RegistroController(this, panelRegistro, autenticacionService);
         }
 
         public void mostrarLogin() {

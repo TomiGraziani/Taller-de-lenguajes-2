@@ -4,9 +4,6 @@ import java.awt.*;
 
 import javax.swing.*;
 
-import dao.implementacion.UsuarioDAOjdbc;
-import modelo.Usuario;
-
 public class FormularioLogin extends JPanel {
 
 	private static final long serialVersionUID = 1L;
@@ -15,10 +12,8 @@ public class FormularioLogin extends JPanel {
     private JPasswordField campoContrasenia;
     private JButton btnIngresar;
 
-    public FormularioLogin(Main mainWindow, UsuarioDAOjdbc usuarioDAO) {
-
+    public FormularioLogin() {
         inicializarComponentes();
-        configurarEventos(mainWindow, usuarioDAO);
     }
 
     private void inicializarComponentes() {
@@ -50,33 +45,29 @@ public class FormularioLogin extends JPanel {
         add(btnIngresar, c);
     }
 
-    private void configurarEventos(Main mainWindow, UsuarioDAOjdbc usuarioDAO) {
-    	
-        btnIngresar.addActionListener(e -> {
-            String email = campoEmail.getText();
-            String contrasenia = new String(campoContrasenia.getPassword());
-
-            if (email.isEmpty() || contrasenia.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Debe completar Email y Contraseña");
-                return;
-            }
-            
-            Usuario usuario = usuarioDAO.buscarPorCredenciales(email, contrasenia);
-            if(usuario == null) {
-                JOptionPane.showMessageDialog(this, "Credenciales inválidas.");
-                return;
-            }
-
-            JOptionPane.showMessageDialog(this, "¡Bienvenido "+ usuario.getNombreUsuario() +"!");
-            limpiarCampos();
-            mainWindow.abrirPlataforma(usuario);
-        });
-
-    }
-    
     public void limpiarCampos() {
-    	campoEmail.setText("");
-    	campoContrasenia.setText("");
+        campoEmail.setText("");
+        campoContrasenia.setText("");
     }
-    
+
+    public JButton getBotonIngresar() {
+        return btnIngresar;
+    }
+
+    public String getEmail() {
+        return campoEmail.getText().trim();
+    }
+
+    public String getContrasenia() {
+        return new String(campoContrasenia.getPassword());
+    }
+
+    public void mostrarError(String mensaje) {
+        JOptionPane.showMessageDialog(this, mensaje, "Error", JOptionPane.ERROR_MESSAGE);
+    }
+
+    public void mostrarMensaje(String mensaje) {
+        JOptionPane.showMessageDialog(this, mensaje);
+    }
+
 }
